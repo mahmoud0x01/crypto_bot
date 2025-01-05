@@ -12,6 +12,30 @@ chat_id = 836636054
 
 
 
+
+def get_assets(coin):             # avbl = get_assets("SOL")
+        cl = HTTP(
+            api_key=BB_API_KEY,
+            api_secret=BB_SECRET_KEY,
+            recv_window=60000
+        )
+        r = cl.get_wallet_balance(accountType="UNIFIED")
+        assets = {
+            asset.get('coin') : float(asset.get('availableToWithdraw', '0.0'))
+            for asset in r.get('result', {}).get('list', [])[0].get('coin', [])
+        }
+        return assets.get(coin, 0.0)
+
+
+
+def get_account_balance():
+    balance = get_assets("USDT")
+    balance = round(balance,3)
+    return balance
+
+
+
+
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
@@ -35,12 +59,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text("You're not authorized to use this bot.")
 
+async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        balance = get_account_balance()
+        balance_rub = get_usdt_to_rub(balance)
+        send_telegram_message(f"```Account USD : {balance}\n RUB : {balance_rub} ```")            
+
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
 
 def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
     application = Application.builder().token(bot_token).build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("balance", balance))
 
 
 
