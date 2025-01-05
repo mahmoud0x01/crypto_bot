@@ -101,7 +101,58 @@ class Traderbot(threading.Thread):
 
         Traderbot._active_threads.append(self)  # Add this thread to the active threads list
 
+    def Send_Orders(self):
+        while self.running:
+            with self.pause_condition:
+                while self.paused:
+                    self.pause_condition.wait()
+                #send_telegram_message(f"{self.name} we here")
+                # Construct the URL for retrieving events
+                try:
+                    events_url = f"https://api.mailgun.net/v3/{domain_name}/events"
+                    #send_telegram_message(f"{self.name}send orders is running") 
+                    # Parameters for filtering and pagination (optional)
+                    params = {
+                        "event": "stored",  # Filter by event type
+                        "ascending": "no",   # Sort direction (yes or no)
+                        "recipients": f"{self.listener_email}@{domain_name}",   
+                        "limit": 1
+                            }
 
+                    # Make the GET request to retrieve the events
+                    response = requests.get(events_url, auth=("api", API_KEY), params=params)
+
+                    # Check the response status
+                    if response.status_code == 200:
+                        # Parse the JSON response
+                        data = response.json()
+
+                        # Initialize a variable to store the last message body
+                        last_message_body = None
+                        for item in data.get("items", []):
+                            timestamp = item.get('timestamp')
+                            message = item.get('message', {})
+                            storage = item.get('storage', {})  # Get the storage details
+
+                            if storage:
+                                storage_key = storage.get('key')  # Get the storage key
+                                if storage_key:
+                                    Body_plain_New = getmessagedata(storage_key)
+                                    command = command_filter(Body_plain_New)
+                                    if (command != self.last_command_received):
+                                        if (self.skip_next_signal == 0):   # we do not want to trigger SELL twice and somehow this works because the email still receives buy order again which override last comamnd received! 
+                                            ress = self.Execute_Orders(command)
+                                            if(ress==1):
+                                                return 1
+                                            send_telegram_message("----------------------------------------")
+                                        else:
+                                            self.skip_next_signal = 0
+
+                                    self.last_command_received = command
+                except Exception as e:
+                    send_telegram_message(f"Exception happened in Send_Orders{e}")
+
+            time.sleep(10) 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
