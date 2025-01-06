@@ -62,7 +62,7 @@ def send_telegram_message(message):
         print("telegram Message sent successfully")
     else:
         print("Failed to send message:", response.text)
-        
+
 def command_filter(command): 
 
     match = re.search(r'\b(Sell|Buy)\b', command, re.IGNORECASE)
@@ -162,7 +162,72 @@ class Traderbot(threading.Thread):
                 except Exception as e:
                     send_telegram_message(f"Exception happened in Send_Orders{e}")
 
-            time.sleep(10) 
+            time.sleep(10)
+
+    def Execute_Orders(self,command):
+        cl = self.cl
+
+        # Determine order side and quantity
+        if command == "Buy":
+            side = command
+            quantity = float(self.amount)
+            #quantity = int(quantity * 100) / 100
+            #print(f"Buying {quantity} {self.symbol}")
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Buying *{quantity}* {self.symbol}")
+        elif command == "Sell":
+            side = command
+            if (self.Simulation_flag==0):  
+                pair = self.symbol
+                baseCoin =  pair[:pair.index('USDT')] # extract the basecoin str
+                prec = cl.get_coin_info(coin=baseCoin)['result']['rows'][0]['chains'][0]['minAccuracy']
+                quantity = self.get_assets(baseCoin) # get available asset to Trade
+                quantity = self.truncate_float(quantity,int(prec)) 
+                # quantity = int(quantity * 100) / 100
+            else:
+                quantity = float(self.amount)
+
+            #print(f"Selling {quantity} {self.symbol}")
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Selling *{quantity}* {self.symbol}")
+        else:
+            #print(f"Invalid command: {command}")
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Invalid command: {command}")
+            return 1
+
+        try:
+            if (self.Simulation_flag==0):
+                r = cl.place_order(
+                    category="spot",
+                    symbol=f"{self.symbol}",
+                    side=side,
+                    orderType="Market",
+                    qty=quantity,
+                    marketUnit="baseCoin",
+                )
+
+                    # Log response
+                #print(f"Order response: {r['retMsg']}\n")
+                send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Order response: {r['retMsg']}\n")
+            #timestamp_of_order = datetime.fromtimestamp(r['time']/1000.0)
+            #timestamp_of_order += timedelta(hours=4)
+            current_utc_time = datetime.utcnow()
+            # Add 7 hours to get GMT+7
+            gmt_plus_7_time = current_utc_time + timedelta(hours=7)
+            # Format the time as needed, e.g., "YYYY-MM-DD HH:MM:SS"
+            timestamp_of_order = gmt_plus_7_time.strftime("%Y-%m-%d %H:%M:%S")
+            self.order_counter = self.order_counter + 1 
+        except exceptions.InvalidRequestError as e:
+            print("ByBit API Request Error", e.status_code, e.message, sep=" | ")
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* ByBit API Request Error : {e.message}")
+            return 1
+        except exceptions.FailedRequestError as e:
+            print("HTTP Request Failed", e.status_code, e.message, sep=" | ")
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* HTTP Request Failed : {e.message}")
+            return 1
+        except Exception as e:
+            print("Unexpected error:", e)
+            send_telegram_message(f"_{self.name}_ *{self.mode} Mode* Unexpected error: {e}")
+            return 1
+ 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
