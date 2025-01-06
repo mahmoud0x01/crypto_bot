@@ -62,7 +62,17 @@ def send_telegram_message(message):
         print("telegram Message sent successfully")
     else:
         print("Failed to send message:", response.text)
+        
+def command_filter(command): 
 
+    match = re.search(r'\b(Sell|Buy)\b', command, re.IGNORECASE)
+
+    if match:
+        word = match.group()
+        word = word[0].upper() + word[1:]
+        return word  # Output: sell
+    else:
+        return 0
 
 
 
