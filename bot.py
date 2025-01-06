@@ -48,7 +48,7 @@ def get_usdt_to_rub(amount):
     except requests.exceptions.RequestException as e:
         #print(f"Error fetching data: {e}")
         return None
-        
+
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
@@ -62,6 +62,45 @@ def send_telegram_message(message):
         print("telegram Message sent successfully")
     else:
         print("Failed to send message:", response.text)
+
+
+
+
+class Traderbot(threading.Thread):
+    _active_threads = []  # Class-level list to store all active threads
+    #_id_counter = 1  # Class-level counter for unique thread IDs
+    def __init__(self,id_t="Undefined",symbol="BTCUSDT",tp=0.0,sl=0.0,amount=0.00011,mode="Simulation",listener_email="any"):
+        super().__init__()
+        self.stop_thread = False
+        self.paused = False  # Flag to control pausing
+        self.pause_condition = threading.Condition()  # Condition to manage pausing
+        self.name = id_t
+        self.symbol = symbol #BTCUSDT , ETHUSDT
+        self.amount = amount
+        self.mode = (str(mode)).replace(" ", "") # Real , Simulation
+        self.running = True  # Flag to control the loop in func1 and func2
+        self.last_command_received = "Sell"
+        self.last_price = 1.0
+        self.accumulated_percentage_change = 0.0
+        self.last_buy_price = 0.0
+        self.listener_email = listener_email
+        self.skip_next_signal = 0
+        self.domain_name = domain_name
+        self.order_counter = 0
+        self.wins = 0
+        self.loses = 0 
+        if (self.mode == "Real"):
+            self.Simulation_flag = 0
+        elif (self.mode == "Simulation"):
+            self.Simulation_flag = 1
+        self.cl = HTTP(
+            api_key=BB_API_KEY,
+            api_secret=BB_SECRET_KEY,
+            recv_window=60000
+        )
+
+        Traderbot._active_threads.append(self)  # Add this thread to the active threads list
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
