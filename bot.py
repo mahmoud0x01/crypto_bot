@@ -229,6 +229,18 @@ class Traderbot(threading.Thread):
             return 1
  
 
+    def manual_trigger(self,command):
+        if (command == "Buy"):
+            self.Execute_Orders("Buy")
+             #self.last_command_received = "Sell"
+            self.skip_next_signal = 1
+            send_telegram_message(f" _{self.name}_ Executed manual_trigger)")
+        elif(command == "Sell"):
+            self.Execute_Orders("Sell")
+             #self.last_command_received = "Sell"
+            self.skip_next_signal = 1
+            send_telegram_message(f" _{self.name}_ Executed manual_trigger)")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
     if str(update.message.chat_id) == str(chat_id):
