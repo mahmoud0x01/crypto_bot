@@ -35,7 +35,20 @@ def get_account_balance():
 
 
 
-
+def get_usdt_to_rub(amount):
+    try:
+        # Get USDT to RUB conversion rate
+        usdt_to_rub_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD"
+        rub_response = requests.get(usdt_to_rub_url)
+        usd_to_rub_rate = float(rub_response.json()['conversion_rates']['RUB'])
+        
+        # Calculate total coin to RUB
+        total_rub = amount * usd_to_rub_rate
+        return total_rub
+    except requests.exceptions.RequestException as e:
+        #print(f"Error fetching data: {e}")
+        return None
+        
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
