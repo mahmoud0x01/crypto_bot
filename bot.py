@@ -245,6 +245,33 @@ class Traderbot(threading.Thread):
             return 1
  
 
+    def Monitor_SL_TP(self):
+        while self.running:
+            with self.pause_condition:
+                while self.paused:
+                    self.pause_condition.wait()
+                    #pause_event.wait()  # if trading stops means that stop loss also stop!
+                #send_telegram_message("Monitor pl is running")
+                try:
+                    cl = self.cl 
+                    if (self.stop_loss_percent != 0 and self.skip_next_signal == 0):
+                        response = cl.get_tickers(category="spot", symbol=f"{self.symbol}")
+                        current_price = float(response['result']['list'][0]['lastPrice'])
+                        #current_price = get_spot_live_price(symbol=self.symbol)
+                        current_state = self.last_price * (1 - (self.stop_loss_percent / 100))
+                        if ((current_price <= current_state) and (self.last_command_received == "Buy")):
+                            send_telegram_message(f" _{self.name}_ *Stop LOSS* 🔴! : hit by *{self.stop_loss_percent}%*")
+                            self.Execute_Orders("Sell")
+                            #self.last_command_received = "Sell"
+                            self.skip_next_signal = 1 # to prevent send_order thread from executing immediate buy order. thus stop loss would be useless :(
+                    ## to be continued TP implementation
+
+                except Exception as e:
+                    #print(e)
+                    send_telegram_message(f"{e}")
+            time.sleep(10)
+
+
     def manual_trigger(self,command):
         if (command == "Buy"):
             self.Execute_Orders("Buy")
