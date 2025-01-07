@@ -111,6 +111,22 @@ class Traderbot(threading.Thread):
 
         Traderbot._active_threads.append(self)  # Add this thread to the active threads list
 
+
+    def truncate_float(self,value, precision):
+        if ( precision > 4):
+            precision = precision - 2
+        # Convert to string with enough precision
+        str_value = f"{value:.{precision + 2}f}"  # Add extra space to avoid rounding
+        # Find the decimal point
+        if '.' in str_value:
+            integer_part, decimal_part = str_value.split('.')
+            # Truncate the decimal part
+            truncated_decimal = decimal_part[:precision]
+            # Combine back the integer and truncated decimal parts
+            return f"{integer_part}.{truncated_decimal}" if truncated_decimal else integer_part
+        return str_value
+
+
     def Send_Orders(self):
         while self.running:
             with self.pause_condition:
