@@ -241,6 +241,38 @@ class Traderbot(threading.Thread):
             self.skip_next_signal = 1
             send_telegram_message(f" _{self.name}_ Executed manual_trigger)")
 
+    def listlast_commands(self):
+        listlast_commands = []
+        events_url = f"https://api.mailgun.net/v3/{domain_name}/events"
+
+        params = {
+            "event": "stored",  # Filter by event type
+            "ascending": "no",   # Sort direction (yes or no)
+            "recipients": f"{self.listener_email}@{self.domain_name}",
+            "limit": 20
+        }
+
+
+        response = requests.get(events_url, auth=("api", API_KEY), params=params)
+
+        if response.status_code == 200:
+            data = response.json()
+            last_message_body = None
+            for item in data.get("items", []):
+                timestamp = item.get('timestamp')
+                message = item.get('message', {})
+                storage = item.get('storage', {})  # Get the storage details
+                if storage:
+                    storage_key = storage.get('key')  # Get the storage key
+                    if storage_key:
+                        Body_plain_New = getmessagedata(storage_key)
+                        command = Body_plain_New
+                        dt_object = datetime.fromtimestamp(timestamp)  # it just works fine without / 1000.0 
+                        dt_object += timedelta(hours=4)
+                        listlast_commands.append(f"{command}  {dt_object}")
+
+        return listlast_commands
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
     if str(update.message.chat_id) == str(chat_id):
