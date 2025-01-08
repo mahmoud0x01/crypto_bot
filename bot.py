@@ -316,6 +316,36 @@ class Traderbot(threading.Thread):
 
         return listlast_commands
 
+
+    def run(self):
+        send_telegram_message(f"BOT *{self.name}* Started ```{self.symbol} {self.amount} {self.mode} {self.listener_email} ```")
+
+        # Use ThreadPoolExecutor to run Send_Orders and Monitor_SL_TP concurrently
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future1 = executor.submit(self.Send_Orders)
+            future2 = executor.submit(self.Monitor_SL_TP)
+
+            # Ensure both methods are running and await their result in each iteration
+            while True:
+                # Optionally, you can wait for both functions to complete
+                try:
+                    # Wait for the result of both functions in each iteration
+                    future1.result(timeout=None)  # None means no timeout, will wait indefinitely
+                except Exception as e:
+                    #print(f"Error occurred in send orders: {e}")
+                    send_telegram_message(f"Error occurred in send orders: {e}")
+                    
+                    # Handle errors or exceptions as needed (optional)
+                try:
+                    future2.result(timeout=None)
+                except Exception as e:
+                    #print(f"Error occurred in monitor sl tp: {e}")
+                    send_telegram_message(f"Error occurred in monitor sl tp: {e}")
+
+
+                time.sleep(0.1)  # Optional sleep to control the loop timing
+
+
     def pause(self):
         with self.pause_condition:
             self.paused = True
