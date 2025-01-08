@@ -316,6 +316,19 @@ class Traderbot(threading.Thread):
 
         return listlast_commands
 
+    def pause(self):
+        with self.pause_condition:
+            self.paused = True
+            #print("Thread is paused.")
+            send_telegram_message(f"*{self.name}* is Paused")
+
+    def resume(self):
+        with self.pause_condition:
+            self.paused = False
+            self.pause_condition.notify()  # Notify to wake up the thread
+            #print("Thread is resumed.")
+            send_telegram_message(f"*{self.name}* is resumed")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
     if str(update.message.chat_id) == str(chat_id):
