@@ -6,7 +6,7 @@
 
 ## Features :
 
-1. listening on signals of **buy / loss** automatically from **TradingView** Strategies / algorithms using **thirdparty free service**  `mailgun` 
+1. listening on signals of **buy / sell** automatically from **TradingView** Strategies / algorithms using **thirdparty free service**  `mailgun` 
 2. executing orders of buy / sell on any required supported asset by remote exchange `we implemented bybit using their API`
 3. Calculating Comprehensive **Statistics** about your trading **{Realized PL , Unrealized PL, Others..}** of ***profits/losses*** also setting up calculation of **trading fees** of each trade been made!
 4. **Stop loss / Take profit** supported by the bot efficiently 
