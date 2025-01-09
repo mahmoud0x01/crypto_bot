@@ -373,6 +373,18 @@ def get_active_threads():
 botlists = []
 
 
+def start_new_bot(user_data):
+    details = user_data['details']
+    name = user_data['name']
+    email = user_data['email']
+    simorreal = str(user_data['simorreal'])
+    get_tp = user_data['get_tp']
+    get_sl = user_data['get_sl']
+    symbol, amount_str = details.split()
+    amount = float(amount_str)
+    new_bot = Traderbot(id_t=name,symbol=symbol,tp=get_tp, sl=get_sl , amount=amount,mode=simorreal,listener_email=email)
+    botlists.append(user_data['name'])
+    new_bot.start()
 
 
 
@@ -383,6 +395,79 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print("someone clicked start")
     else:
         await update.message.reply_text("You're not authorized to use this bot.")
+
+
+
+async def create_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle a custom command if from allowed chat ID."""
+    if str(update.message.chat_id) == str(chat_id):
+        await update.message.reply_text("Please enter your new bot name  :")
+        return NAME
+    else:
+        await update.message.reply_text("You're not authorized to use this bot.")
+
+# Ask for name
+async def get_name(update: Update, context: CallbackContext) -> int:
+    # Save the name in context (can be accessed later)
+    context.user_data['name'] = update.message.text
+    await update.message.reply_text("Please enter your bot config in the following format : BTCUSDT 0.000110")
+    return DETAILS
+
+
+async def get_details(update: Update, context: CallbackContext) -> int:
+    # Save the name in context (can be accessed later)
+    context.user_data['details'] = update.message.text
+    await update.message.reply_text("Please enter your bot email listener : ")
+    return EMAIL
+
+
+async def get_email(update: Update, context: CallbackContext) -> int:
+    # Save the ID in context (can be accessed later)
+    context.user_data['email'] = update.message.text
+    await update.message.reply_text("Please enter mode : (Simulation/Real) ")
+    return SIMORREAL
+
+# Ask for ID
+async def get_simorreal(update: Update, context: CallbackContext) -> int:
+    # Save the ID in context (can be accessed later)
+    context.user_data['simorreal'] = update.message.text
+    await update.message.reply_text("Please enter Take profit percentage [write 0 for none set ]:")
+    return GET_TP
+
+
+async def get_tp(update: Update, context: CallbackContext) -> int:
+    # Save the ID in context (can be accessed later)
+    context.user_data['get_tp'] = float(update.message.text)
+    await update.message.reply_text("Please enter stop loss percentage [write 0 for none set ]:")
+    return GET_SL
+
+# Ask for another variable
+async def get_sl(update: Update, context: CallbackContext) -> int:  # -> int:  becuause CHOICE is an int as id in the dict
+    # Save the variable in context
+    context.user_data['get_sl'] = float(update.message.text)
+    details = context.user_data['details']
+    name = context.user_data['name']
+    email = context.user_data['email']
+    simorreal = context.user_data['simorreal']
+    get_tp = context.user_data['get_tp']
+    get_sl = context.user_data['get_sl']
+    await update.message.reply_text(f"Thank you! Here's what you entered:\nBot : {name}\nconfig: {details} email : {email} MODE : {simorreal} TP: {get_tp}SL: {get_sl}\n is all correct to start the bot ?(y)")
+    return CHOICE 
+async def start_new_bot_handle(update: Update, context: CallbackContext) -> int:
+    # Save the ID in context (can be accessed later)
+    context.user_data['choice'] = update.message.text
+    if (context.user_data['choice'] == "y"):
+        context.user_data.pop('choice', None)
+        start_new_bot(context.user_data)
+    return ConversationHandler.END
+
+# Cancel conversation
+async def cancel(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("creating a bot canceled.")
+    return ConversationHandler.END
+
+
+
 
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
     if str(update.message.chat_id) == str(chat_id):
@@ -398,6 +483,21 @@ def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
     application = Application.builder().token(bot_token).build()
+    conversation_handler = ConversationHandler(
+        entry_points=[CommandHandler('create_bot', create_bot)],
+        states={
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_details)],
+            EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
+            SIMORREAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_simorreal)],
+            GET_TP: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_tp)],
+            GET_SL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_sl)],
+            CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, start_new_bot_handle)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    application.add_handler(conversation_handler)
+    
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("balance", balance))
 
