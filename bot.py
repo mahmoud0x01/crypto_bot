@@ -9,9 +9,10 @@ import requests
 
 bot_token = "7871464466:AAGPsw9swPen6LqnmXebZbzCoVL4VjoCSGY"
 chat_id = 836636054
-
-
-
+domain_name = ""
+API_KEY = ""
+BB_API_KEY = ""
+BB_SECRET_KEY = ""
 
 def get_assets(coin):             # avbl = get_assets("SOL")
         cl = HTTP(
