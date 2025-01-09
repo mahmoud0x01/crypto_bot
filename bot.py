@@ -353,7 +353,11 @@ class Traderbot(threading.Thread):
 
 
                 time.sleep(0.1)  # Optional sleep to control the loop timing
-
+    def stop(self):
+        self.running = False
+        Traderbot._active_threads.remove(self)  # Remove this thread from the list when it stops
+        self.resume()  # Ensure the thread can exit if paused
+        send_telegram_message(f"*{self.name}* is Stopping ...")
 
     def pause(self):
         with self.pause_condition:
