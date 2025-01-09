@@ -359,6 +359,23 @@ class Traderbot(threading.Thread):
             #print("Thread is resumed.")
             send_telegram_message(f"*{self.name}* is resumed")
 
+
+
+
+
+# Function to get a list of active threads
+def get_active_threads():
+    if not Traderbot._active_threads:
+        #print("No active threads.")
+        return []
+    return [thread.name for thread in Traderbot._active_threads]
+
+botlists = []
+
+
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
     if str(update.message.chat_id) == str(chat_id):
