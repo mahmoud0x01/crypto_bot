@@ -7,8 +7,8 @@ import requests
 
 
 
-bot_token = "7871464466:AAGPsw9swPen6LqnmXebZbzCoVL4VjoCSGY"
-chat_id = 836636054
+bot_token = "7871464466:AAGPsw9swPen6LqnmXebZbzCoVL4VjoCSGY" # TOKEN EXAMPLE . ALREADY REVOKED ;)
+chat_id = 836636054 # CHAT ID EXAMPLE
 domain_name = ""
 API_KEY = ""
 BB_API_KEY = ""
