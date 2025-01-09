@@ -369,6 +369,7 @@ class Traderbot(threading.Thread):
         with self.pause_condition:
             self.paused = False
             self.pause_condition.notify()  # Notify to wake up the thread
+            self.pause_condition.notify()  # Notify to wake up the thread the other thread ) fixed bug!
             #print("Thread is resumed.")
             send_telegram_message(f"*{self.name}* is resumed")
 
@@ -510,7 +511,7 @@ def run_bot() -> None:
         fallbacks=[CommandHandler('cancel', cancel)],
     )
     application.add_handler(conversation_handler)
-    
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("balance", balance))
 
