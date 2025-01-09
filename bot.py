@@ -265,7 +265,16 @@ class Traderbot(threading.Thread):
                             #self.last_command_received = "Sell"
                             self.skip_next_signal = 1 # to prevent send_order thread from executing immediate buy order. thus stop loss would be useless :(
                     ## to be continued TP implementation
-
+                    if (self.take_profit_percent != 0 and self.skip_next_signal == 0 ):
+                        response = cl.get_tickers(category="spot", symbol=f"{self.symbol}")
+                        current_price = float(response['result']['list'][0]['lastPrice'])
+                        #current_price = get_spot_live_price(symbol=self.symbol)
+                        current_state = self.last_price * (1 + (self.take_profit_percent / 100))
+                        if ((current_price >= current_state) and (self.last_command_received == "Buy")):
+                            send_telegram_message(f" _{self.name}_ *TAKE PROFIT* 🟦 ! : hit by *{self.take_profit_percent}%*")
+                            self.Execute_Orders("Sell")
+                            #self.last_command_received = "Sell"
+                            self.skip_next_signal = 1
                 except Exception as e:
                     #print(e)
                     send_telegram_message(f"{e}")
