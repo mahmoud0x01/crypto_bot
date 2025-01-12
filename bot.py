@@ -610,6 +610,21 @@ def set_st_func(selected_stop_loss):
         if thread.name==selected_bot_name:
             thread.set_ST(selected_stop_loss)
 
+
+async def list_signals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        list_signals_func(selected_bot_name)
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+def list_signals_func(bot_name):
+    for thread in Traderbot._active_threads:
+        if thread.name==bot_name:
+            listx = thread.listlast_commands()
+            send_telegram_message(f"{listx}")
+
+
+
 def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
@@ -633,7 +648,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("balance", balance))
     application.add_handler(CommandHandler("set_tp", set_tp))
     application.add_handler(CommandHandler("set_st", set_st))
-
+    application.add_handler(CommandHandler("list_signals", list_signals))
 
 
 run_bot()
