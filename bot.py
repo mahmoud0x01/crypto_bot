@@ -257,6 +257,40 @@ class Traderbot(threading.Thread):
             print("Unexpected error:", e)
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* Unexpected error: {e}")
             return 1
+
+        try:
+            resultoftrade = "" 
+            response = cl.get_tickers(category="spot", symbol=f"{self.symbol}")
+            current_price = float(response['result']['list'][0]['lastPrice'])
+            #print (current_price)
+            if(command == "Sell" ):
+                percentage_change = ((current_price - self.last_price) / self.last_price) * 100
+                self.accumulated_percentage_change += percentage_change
+                if percentage_change > 0:
+                    resultoftrade = f"☘☘ Profit: +{percentage_change:.2f}%"
+                    self.wins+=1
+                else:
+                    resultoftrade = f"❗❗ Loss: {percentage_change:.2f}%"
+                    self.loses+=1
+
+                accumulated_percentage_change_str = f"{self.accumulated_percentage_change:.2f}%"
+                #print (f"Executed {command} {self.symbol} at price {current_price} . {resultoftrade} || all time : {accumulated_percentage_change_str} || Time : {timestamp_of_order}")
+                send_telegram_message(f"_{self.name}_ Executed `{command}` {self.symbol} at price *{current_price}* . _{resultoftrade}_ || all time : *{accumulated_percentage_change_str}* || Time : *{timestamp_of_order}* ")
+
+            else:
+                #print (f"Executed {command} {self.symbol} at price {current_price} . last price : {self.last_price}  || Time : {timestamp_of_order} ")
+                send_telegram_message(f"_{self.name}_ Executed `{command}` {self.symbol} at price *{current_price}* . last price : *{self.last_price}* || Time : *{timestamp_of_order}*")
+                self.last_buy_price = current_price
+            self.last_price = current_price
+
+
+        except Exception as e:
+            #print(e)
+            #send_telegram_message(f"{e}")
+            pass
+
+        return 0
+        
  
 
     def Monitor_SL_TP(self):
