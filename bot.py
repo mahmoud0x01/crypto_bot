@@ -575,7 +575,40 @@ def set_tp_func(selected_take_profit):
             thread.set_TP(selected_take_profit)
             
 
+async def set_st(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Prompt user to select a stop-loss percentage."""
+    if str(update.message.chat_id) == str(chat_id):
+        keyboard = [
+            [InlineKeyboardButton(f"{val}%", callback_data=f"stop_loss_{val}")]
+            for val in stop_loss_options
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("Select a stop-loss percentage:", reply_markup=reply_markup)
+    else:
+        await update.message.reply_text("You're not authorized to use this bot.")
 
+
+
+async def handle_stoploss_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the stop-loss selection."""
+    query = update.callback_query
+    await query.answer()
+    
+    if str(query.message.chat_id) == str(chat_id):
+        # Extract the selected stop-loss value from the callback data
+        selected_stop_loss = float(query.data.split('_')[2])
+        await query.edit_message_text(text=f"Stop-loss set to {selected_stop_loss}%")
+        # Here, you can use the selected stop-loss value in your trading logic
+        print(f"Stop-loss set to {selected_stop_loss}%")  # Debugging line
+        set_st_func(selected_stop_loss)
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
+def set_st_func(selected_stop_loss):
+    for thread in Traderbot._active_threads:
+        if thread.name==selected_bot_name:
+            thread.set_ST(selected_stop_loss)
 
 def run_bot() -> None:
     """Start the bot and listen for commands."""
@@ -599,6 +632,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("balance", balance))
     application.add_handler(CommandHandler("set_tp", set_tp))
+    application.add_handler(CommandHandler("set_st", set_st))
 
 
 
