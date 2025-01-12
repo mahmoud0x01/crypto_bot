@@ -507,6 +507,42 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
 
+async def set_tp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Prompt user to select a stop-loss percentage."""
+    if str(update.message.chat_id) == str(chat_id):
+        keyboard = [
+            [InlineKeyboardButton(f"{val}%", callback_data=f"take_profit_{val}")]
+            for val in stop_loss_options # no need to change they are same options n values
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("Select a take profit percentage:", reply_markup=reply_markup)
+    else:
+        await update.message.reply_text("You're not authorized to use this bot.")
+
+
+async def handle_takeprofit_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the stop-loss selection."""
+    query = update.callback_query
+    await query.answer()
+    
+    if str(query.message.chat_id) == str(chat_id):
+        # Extract the selected stop-loss value from the callback data
+        selected_take_profit = float(query.data.split('_')[2])
+        await query.edit_message_text(text=f"take profit set to {selected_take_profit}%")
+        # Here, you can use the selected stop-loss value in your trading logic
+        set_tp_func(selected_take_profit)
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
+def set_tp_func(selected_take_profit):
+    for thread in Traderbot._active_threads:
+        if thread.name==selected_bot_name:
+            thread.set_TP(selected_take_profit)
+            
+
+
+
 def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
@@ -528,6 +564,7 @@ def run_bot() -> None:
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("balance", balance))
+    application.add_handler(CommandHandler("set_tp", set_tp))
 
 
 
