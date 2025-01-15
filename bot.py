@@ -433,7 +433,7 @@ def get_active_threads():
     return [thread.name for thread in Traderbot._active_threads]
 
 botlists = []
-
+selected_bot_name = None
 
 def start_new_bot(user_data):
     details = user_data['details']
@@ -622,7 +622,31 @@ def list_signals_func(bot_name):
         if thread.name==bot_name:
             listx = thread.listlast_commands()
             send_telegram_message(f"{listx}")
+async def list_bots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Prompt user to select a stop-loss percentage."""
+    if str(update.message.chat_id) == str(chat_id):
+        if not not botlists:
+            keyboard = [
+                [InlineKeyboardButton(f"{val}", callback_data=f"select_bot_{val}")]
+                for val in botlists
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text("List of running bots :", reply_markup=reply_markup)
+        else:
+             await update.message.reply_text("You do not have any active bots")
+    else:
+        await update.message.reply_text("You're not authorized to use this bot.")
 
+async def select_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global selected_bot_name  
+    query = update.callback_query
+    await query.answer()
+    if str(query.message.chat_id) == str(chat_id):
+        # Extract the selected stop-loss value from the callback data
+        selected_bot_name = str(query.data.split('_')[2])
+        await query.edit_message_text(text=f"Now {selected_bot_name} is the selected bot. You may execute now /show_bot_status or /halt_bot or /trigger_signal or others. ")
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
 
 
 def run_bot() -> None:
@@ -649,6 +673,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("set_tp", set_tp))
     application.add_handler(CommandHandler("set_st", set_st))
     application.add_handler(CommandHandler("list_signals", list_signals))
+    application.add_handler(CommandHandler("list_bots", list_bots))
 
 
 run_bot()
