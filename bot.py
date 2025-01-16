@@ -729,6 +729,56 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if str(update.message.chat_id) == str(chat_id):
         await update.message.reply_text(f"You said: {update.message.text}")
 
+
+async def trigger_signal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Prompt user to select a stop-loss percentage."""
+    if str(update.message.chat_id) == str(chat_id):
+        if selected_bot_name:
+            keyboard = [
+                [
+                InlineKeyboardButton("🔵", callback_data=f"trigger_signal_Green"),
+                InlineKeyboardButton("🔴", callback_data=f"trigger_signal_Red"),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text("Choose action: (BUY/SELL)", reply_markup=reply_markup)
+        else:
+            await update.message.reply_text("Select a bot first with /list_bots")          
+    else:
+        await update.message.reply_text("You're not authorized to use this bot.")
+
+
+async def handle_trigger_signal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the stop-loss selection."""
+    query = update.callback_query
+    await query.answer()
+    
+    if str(query.message.chat_id) == str(chat_id):
+        if (query.data == "trigger_signal_Green"):
+            # Here, you can use the selected stop-loss value in your trading logic
+            if selected_bot_name:
+                await query.edit_message_text(text=f"🔵 Buying ...")
+                for thread in Traderbot._active_threads:
+                    if thread.name==selected_bot_name:
+                        thread.manual_trigger("Buy")
+        
+            else:
+                await update.message.reply_text("Select a bot first with /list_bots")
+
+        if (query.data == "trigger_signal_Red"):
+            if selected_bot_name:
+                await query.edit_message_text(text=f"🔴 Selling  ...")
+                for thread in Traderbot._active_threads:
+                    if thread.name==selected_bot_name:
+                        thread.manual_trigger("Sell")
+        
+            else:
+                await update.message.reply_text("Select a bot first with /list_bots")
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
+
 def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
@@ -758,8 +808,10 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("set_st", set_st))
     application.add_handler(CommandHandler("set_tp", set_tp))
     application.add_handler(CommandHandler("stop_bot", stop_bot))
+    application.add_handler(CommandHandler("trigger_signal", trigger_signal))
     application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
     application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
+    application.add_handler(CallbackQueryHandler(handle_trigger_signal_selection, pattern=r"trigger_signal_"))
     application.add_handler(CallbackQueryHandler(select_bot_handler, pattern=r"select_bot_"))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Echo non-command messages
 run_bot()
