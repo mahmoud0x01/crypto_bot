@@ -648,6 +648,12 @@ async def select_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
+def escape_markdown(text):
+    """Escape Telegram markdown special characters."""
+    return re.sub(r'([*_`\[\]])', r'\\\1', text)
+
+
+
 
 def run_bot() -> None:
     """Start the bot and listen for commands."""
