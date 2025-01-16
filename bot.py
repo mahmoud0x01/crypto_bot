@@ -648,11 +648,80 @@ async def select_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
+async def show_bot_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        show_bot_status_func(selected_bot_name)
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
 def escape_markdown(text):
     """Escape Telegram markdown special characters."""
     return re.sub(r'([*_`\[\]])', r'\\\1', text)
 
 
+
+def show_bot_status_func(bot_name):
+    for thread in Traderbot._active_threads:
+        if thread.name==bot_name:
+            cl = thread.cl
+            response = cl.get_tickers(category="spot", symbol=f"{thread.symbol}")
+            current_price = float(response['result']['list'][0]['lastPrice'])
+            if (thread.last_command_received == "Buy" or thread.order_counter != 0 ):      
+                current_pl = ((current_price*thread.amount) / thread.last_price) - thread.amount
+                current_pl = current_pl - (thread.amount * (1 * 0.001 ))
+                current_pl_percentage = (current_pl / thread.amount) * 100
+                current_pl_percentage = round(current_pl_percentage,3)
+                current_pl = current_pl * current_price  # to get USDT amount
+                current_pl = round(current_pl,3)
+                current_pl_RUB = get_usdt_to_rub(current_pl)
+                current_pl_RUB = round(current_pl_RUB,2)
+            else:
+                current_pl = 0
+                current_pl_RUB = 0
+                current_pl_percentage = 0 
+
+            amount_of_trade_in_rub = thread.amount * current_price
+            amount_of_trade_in_rub = get_usdt_to_rub(amount_of_trade_in_rub)
+            amount_of_trade_in_rub = round(amount_of_trade_in_rub,2)
+            Realized_pl = thread.amount * ((thread.accumulated_percentage_change / 100) - (thread.order_counter * 0.001 ))
+            Realized_pl_percentage = (Realized_pl / thread.amount) * 100
+            Realized_pl_percentage = round(Realized_pl_percentage,3)
+            Realized_pl = Realized_pl * current_price
+            Realized_pl = round(Realized_pl,3)
+            Realized_pl_RUB = get_usdt_to_rub(Realized_pl)
+            Realized_pl_RUB = round(Realized_pl_RUB,2)
+            if thread.paused == True :
+                appended = "Paused🔄"
+            else :
+                appended = "Running 🟩"
+
+            escaped_email = escape_markdown(thread.listener_email)
+            escaped_name = escape_markdown(bot_name)
+            message = (f"""BOT *{escaped_name}* is *{appended}* : ```
+        - symbol : {thread.symbol}
+        - amount : {thread.amount}
+        - amount RUB : {amount_of_trade_in_rub}
+        - mode : {thread.mode}
+        - last_price: {thread.last_price}
+        - Current_price: {current_price}
+        - Unrealized_PL : {current_pl} USD
+        - Unrealized_PL_RUB : {current_pl_RUB} RUB
+        - Unrealized_PL_% : {current_pl_percentage} %
+        - Realized_pl : {Realized_pl} USD
+        - Realized_pl_RUB : {Realized_pl_RUB} RUB
+        - Realized_pl_% : {Realized_pl_percentage} %
+        - Orders No : {thread.order_counter}
+        - Wins : {thread.wins}
+        - Losses : {thread.loses}
+        - take_profit_percent : {thread.take_profit_percent}
+        - stop_loss_percent : {thread.stop_loss_percent}
+        - listener_email : {escaped_email}
+        - last_command_received : {thread.last_command_received}
+        - skip_next_signal : {thread.skip_next_signal}
+
+                    ```""")
+            send_telegram_message(message)
 
 
 def run_bot() -> None:
@@ -680,6 +749,12 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("set_st", set_st))
     application.add_handler(CommandHandler("list_signals", list_signals))
     application.add_handler(CommandHandler("list_bots", list_bots))
-
+    application.add_handler(CommandHandler("show_bot_status", show_bot_status))
+    application.add_handler(CommandHandler("set_st", set_st))
+    application.add_handler(CommandHandler("set_tp", set_tp))
+    application.add_handler(CommandHandler("stop_bot", stop_bot))
+    application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
+    application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
+    application.add_handler(CallbackQueryHandler(select_bot_handler, pattern=r"select_bot_"))
 
 run_bot()
