@@ -748,6 +748,7 @@ async def trigger_signal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("You're not authorized to use this bot.")
 
 
+
 async def handle_trigger_signal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the stop-loss selection."""
     query = update.callback_query
@@ -774,6 +775,34 @@ async def handle_trigger_signal_selection(update: Update, context: ContextTypes.
         
             else:
                 await update.message.reply_text("Select a bot first with /list_bots")
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
+async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        if selected_bot_name:
+            for thread in Traderbot._active_threads:
+                if thread.name==selected_bot_name:
+                    thread.stop()
+                    botlists.remove(str(selected_bot_name))
+        
+        else:
+            await update.message.reply_text("Select a bot first with /list_bots")     
+
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
+
+async def resume_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        if selected_bot_name:
+            for thread in Traderbot._active_threads:
+                if thread.name==selected_bot_name:
+                    thread.resume()
+        
+        else:
+            await update.message.reply_text("Select a bot first with /list_bots")     
+
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
@@ -808,6 +837,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("set_st", set_st))
     application.add_handler(CommandHandler("set_tp", set_tp))
     application.add_handler(CommandHandler("stop_bot", stop_bot))
+    application.add_handler(CommandHandler("resume_bot", resume_bot))
     application.add_handler(CommandHandler("trigger_signal", trigger_signal))
     application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
     application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
