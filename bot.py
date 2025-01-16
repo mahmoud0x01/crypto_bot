@@ -724,6 +724,11 @@ def show_bot_status_func(bot_name):
             send_telegram_message(message)
 
 
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Echo the user message if from allowed chat ID."""
+    if str(update.message.chat_id) == str(chat_id):
+        await update.message.reply_text(f"You said: {update.message.text}")
+
 def run_bot() -> None:
     """Start the bot and listen for commands."""
     # Create the Application and pass the bot's token
@@ -756,5 +761,5 @@ def run_bot() -> None:
     application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
     application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
     application.add_handler(CallbackQueryHandler(select_bot_handler, pattern=r"select_bot_"))
-
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Echo non-command messages
 run_bot()
