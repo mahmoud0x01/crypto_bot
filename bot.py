@@ -805,7 +805,23 @@ async def resume_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
+async def help_general(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    if str(update.message.chat_id) == str(chat_id):
+        await update.message.reply_text("/start: Initializes the bot and verifies authorization.\
+            /balance: Retrieves account balance in USD and RUB.\
+            /create_bot: Prompts the user to configure and start a new trading bot instance.\
+            /halt_bot: Pauses the selected bot instance.\
+            /resume_bot: Resumes the selected bot instance.\
+            /stop_bot: Stops and deletes the selected bot instance.\
+            /list_bots: Lists all active bot instances.\
+            /show_bot_status: Displays the current status of the selected bot.\
+            /list_signals: Shows the last few received trading signals.\
+            /set_st: Configures stop-loss for the selected bot instance.\
+            /set_tp: Configures take-profit for the selected bot instance.\
+            /trigger_signal: Manually triggers a buy or sell command.")     
 
+    else:
+        await query.edit_message_text(text="You're not authorized to use this bot.")
 
 
 def run_bot() -> None:
@@ -839,6 +855,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("stop_bot", stop_bot))
     application.add_handler(CommandHandler("resume_bot", resume_bot))
     application.add_handler(CommandHandler("trigger_signal", trigger_signal))
+    application.add_handler(CommandHandler("help", help_general))
     application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
     application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
     application.add_handler(CallbackQueryHandler(handle_trigger_signal_selection, pattern=r"trigger_signal_"))
