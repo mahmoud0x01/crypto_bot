@@ -15,6 +15,7 @@
 - Includes a simulation mode to test strategies risk-free.
 - Offers manual trading via Telegram bot commands.
 - Ensures secure access through chat ID restrictions.
+- Proper ratelimiting of APIs to avoid blocking  
 - ability to remotely add more authorized user to use the bot instance with you
 
 
@@ -37,9 +38,7 @@
 
 6. Configure Bybit API keys (`BB_API_KEY` and `BB_SECRET_KEY`).
 
-7. Proper ratelimiting of APIs to avoid blocking  
-
-8. Setup value of `secret_command` for adding authorized telegram users  
+7. Setup value of `secret_command` for adding authorized telegram users  
 
 ### Telegram Bot Commands
 
