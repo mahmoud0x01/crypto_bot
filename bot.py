@@ -127,6 +127,15 @@ def command_filter(command):
 
 
 
+
+class UserManager:
+    def __init__(self):
+        self.users = []
+
+    def add_user(self, chat_id):
+        self.users.append(chat_id)
+
+
 class Traderbot(threading.Thread):
     _active_threads = []  # Class-level list to store all active threads
     #_id_counter = 1  # Class-level counter for unique thread IDs
@@ -492,7 +501,7 @@ def start_new_bot(user_data):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the /start command is issued, if from allowed chat ID."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         await update.message.reply_text("Hello! You're authorized to use this bot.")
         print("someone clicked start")
     else:
@@ -502,7 +511,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def create_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle a custom command if from allowed chat ID."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users::
         await update.message.reply_text("Please enter your new bot name  :")
         return NAME
     else:
@@ -572,7 +581,7 @@ async def cancel(update: Update, context: CallbackContext) -> int:
 
 
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         balance = get_account_balance()
         balance_rub = get_usdt_to_rub(balance)
         send_telegram_message(f"```Account USD : {balance}\n RUB : {balance_rub} ```")            
@@ -583,7 +592,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def set_tp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Prompt user to select a stop-loss percentage."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         keyboard = [
             [InlineKeyboardButton(f"{val}%", callback_data=f"take_profit_{val}")]
             for val in stop_loss_options # no need to change they are same options n values
@@ -617,7 +626,7 @@ def set_tp_func(selected_take_profit):
 
 async def set_st(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Prompt user to select a stop-loss percentage."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         keyboard = [
             [InlineKeyboardButton(f"{val}%", callback_data=f"stop_loss_{val}")]
             for val in stop_loss_options
@@ -652,7 +661,7 @@ def set_st_func(selected_stop_loss):
 
 
 async def list_signals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         list_signals_func(selected_bot_name)
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
@@ -664,7 +673,7 @@ def list_signals_func(bot_name):
             send_telegram_message(f"{listx}")
 async def list_bots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Prompt user to select a stop-loss percentage."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         if not not botlists:
             keyboard = [
                 [InlineKeyboardButton(f"{val}", callback_data=f"select_bot_{val}")]
@@ -681,7 +690,7 @@ async def select_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     global selected_bot_name  
     query = update.callback_query
     await query.answer()
-    if str(query.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         # Extract the selected stop-loss value from the callback data
         selected_bot_name = str(query.data.split('_')[2])
         await query.edit_message_text(text=f"Now {selected_bot_name} is the selected bot. You may execute now /show_bot_status or /halt_bot or /trigger_signal or others. ")
@@ -689,7 +698,7 @@ async def select_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
 async def show_bot_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         show_bot_status_func(selected_bot_name)
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
@@ -766,13 +775,13 @@ def show_bot_status_func(bot_name):
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message if from allowed chat ID."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         await update.message.reply_text(f"You said: {update.message.text}")
 
 
 async def trigger_signal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Prompt user to select a stop-loss percentage."""
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         if selected_bot_name:
             keyboard = [
                 [
@@ -794,7 +803,7 @@ async def handle_trigger_signal_selection(update: Update, context: ContextTypes.
     query = update.callback_query
     await query.answer()
     
-    if str(query.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         if (query.data == "trigger_signal_Green"):
             # Here, you can use the selected stop-loss value in your trading logic
             if selected_bot_name:
@@ -820,7 +829,7 @@ async def handle_trigger_signal_selection(update: Update, context: ContextTypes.
 
 
 async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         if selected_bot_name:
             for thread in Traderbot._active_threads:
                 if thread.name==selected_bot_name:
@@ -834,7 +843,7 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 
 async def resume_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         if selected_bot_name:
             for thread in Traderbot._active_threads:
                 if thread.name==selected_bot_name:
@@ -846,7 +855,7 @@ async def resume_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
 async def help_general(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
-    if str(update.message.chat_id) == str(chat_id):
+    if str(query.message.chat_id) in user_manager.users:
         await update.message.reply_text("/start: Initializes the bot and verifies authorization.\
             /balance: Retrieves account balance in USD and RUB.\
             /create_bot: Prompts the user to configure and start a new trading bot instance.\
