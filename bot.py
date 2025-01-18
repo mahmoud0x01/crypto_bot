@@ -27,6 +27,41 @@ API_KEY = ""
 BB_API_KEY = ""
 BB_SECRET_KEY = ""
 
+
+def rate_limit(calls_per_second):
+    interval = 1.0 / calls_per_second
+
+    def decorator(func):
+        last_called = [0.0]
+
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            elapsed = time.time() - last_called[0]
+            if elapsed < interval:
+                time.sleep(interval - elapsed)
+            last_called[0] = time.time()
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+def getmessagedata(storage_key):
+
+    # Construct the URL for the stored message
+    url = f"https://api.mailgun.net/v3/domains/{domain_name}/messages/{storage_key}"
+    @rate_limit(calls_per_second=5)  
+    # Make the GET request to retrieve the stored message
+    response = requests.get(url, auth=("api", API_KEY))
+
+    # Check the response status
+    if response.status_code == 200:
+        # Parse the JSON response
+        data = response.json()
+        Body_plain = data.get("body-plain")
+        return Body_plain
+
 def get_assets(coin):             # avbl = get_assets("SOL")
         cl = HTTP(
             api_key=BB_API_KEY,
@@ -53,6 +88,7 @@ def get_usdt_to_rub(amount):
     try:
         # Get USDT to RUB conversion rate
         usdt_to_rub_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD"
+        @rate_limit(calls_per_second=5)  
         rub_response = requests.get(usdt_to_rub_url)
         usd_to_rub_rate = float(rub_response.json()['conversion_rates']['RUB'])
         
@@ -70,6 +106,7 @@ def send_telegram_message(message):
         "text": message,
         "parse_mode": "Markdown"  # Optional, use "Markdown" or "HTML" for formatting
     }
+    @rate_limit(calls_per_second=1)  
     response = requests.post(url, json=payload)
     
     if response.status_code == 200:
@@ -158,7 +195,7 @@ class Traderbot(threading.Thread):
                         "recipients": f"{self.listener_email}@{domain_name}",   
                         "limit": 1
                             }
-
+                    @rate_limit(calls_per_second=5)       
                     # Make the GET request to retrieve the events
                     response = requests.get(events_url, auth=("api", API_KEY), params=params)
 
@@ -192,7 +229,7 @@ class Traderbot(threading.Thread):
                 except Exception as e:
                     send_telegram_message(f"Exception happened in Send_Orders{e}")
 
-            time.sleep(10)
+            time.sleep(1)
 
     def Execute_Orders(self,command):
         cl = self.cl
@@ -225,6 +262,7 @@ class Traderbot(threading.Thread):
 
         try:
             if (self.Simulation_flag==0):
+                @rate_limit(calls_per_second=5)
                 r = cl.place_order(
                     category="spot",
                     symbol=f"{self.symbol}",
@@ -352,7 +390,7 @@ class Traderbot(threading.Thread):
             "limit": 20
         }
 
-
+        @rate_limit(calls_per_second=5)  
         response = requests.get(events_url, auth=("api", API_KEY), params=params)
 
         if response.status_code == 200:
@@ -420,6 +458,8 @@ class Traderbot(threading.Thread):
             self.pause_condition.notify()  # Notify to wake up the thread the other thread ) fixed bug!
             #print("Thread is resumed.")
             send_telegram_message(f"*{self.name}* is resumed")
+
+
 
 
 
@@ -861,4 +901,5 @@ def run_bot() -> None:
     application.add_handler(CallbackQueryHandler(handle_trigger_signal_selection, pattern=r"trigger_signal_"))
     application.add_handler(CallbackQueryHandler(select_bot_handler, pattern=r"select_bot_"))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Echo non-command messages
+
 run_bot()
