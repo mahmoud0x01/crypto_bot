@@ -29,6 +29,18 @@ BB_SECRET_KEY = ""
 secret_command = "secret_command"
 
 
+
+def log_event(level, message):
+    """Log an event at the specified level."""
+    if level == 'info':
+        logging.info(message)
+    elif level == 'debug':
+        logging.debug(message)
+    elif level == 'error':
+        logging.error(message)
+
+
+
 def rate_limit(calls_per_second):
     interval = 1.0 / calls_per_second
 
@@ -98,6 +110,7 @@ def get_usdt_to_rub(amount):
         return total_rub
     except requests.exceptions.RequestException as e:
         #print(f"Error fetching data: {e}")
+        log_event('error', f"Error fetching data: {e}")
         return None
 
 def send_telegram_message(message):
@@ -113,6 +126,7 @@ def send_telegram_message(message):
     if response.status_code == 200:
         print("telegram Message sent successfully")
     else:
+        log_event('error', f"Failed to send message")
         print("Failed to send message:", response.text)
 
 def command_filter(command): 
@@ -237,6 +251,7 @@ class Traderbot(threading.Thread):
 
                                     self.last_command_received = command
                 except Exception as e:
+                    log_event('error', f"Exception happened in Send_Orders{e}")
                     send_telegram_message(f"Exception happened in Send_Orders{e}")
 
             time.sleep(1)
@@ -251,6 +266,7 @@ class Traderbot(threading.Thread):
             #quantity = int(quantity * 100) / 100
             #print(f"Buying {quantity} {self.symbol}")
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Buying *{quantity}* {self.symbol}")
+            log_event('info', f"_{self.name}_ *{self.mode} Mode* : Buying *{quantity}* {self.symbol}")
         elif command == "Sell":
             side = command
             if (self.Simulation_flag==0):  
@@ -265,9 +281,11 @@ class Traderbot(threading.Thread):
 
             #print(f"Selling {quantity} {self.symbol}")
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Selling *{quantity}* {self.symbol}")
+            log_event('info', f"_{self.name}_ *{self.mode} Mode* : Selling *{quantity}* {self.symbol}")
         else:
             #print(f"Invalid command: {command}")
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* : Invalid command: {command}")
+            log_event('error', f"_{self.name}_ *{self.mode} Mode* : Invalid command: {command}")
             return 1
 
         try:
@@ -296,14 +314,17 @@ class Traderbot(threading.Thread):
         except exceptions.InvalidRequestError as e:
             print("ByBit API Request Error", e.status_code, e.message, sep=" | ")
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* ByBit API Request Error : {e.message}")
+            log_event('error',f"_{self.name}_ *{self.mode} Mode* ByBit API Request Error : {e.message}")
             return 1
         except exceptions.FailedRequestError as e:
             print("HTTP Request Failed", e.status_code, e.message, sep=" | ")
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* HTTP Request Failed : {e.message}")
+            log_event('error',f"_{self.name}_ *{self.mode} Mode* HTTP Request Failed : {e.message}")
             return 1
         except Exception as e:
             print("Unexpected error:", e)
             send_telegram_message(f"_{self.name}_ *{self.mode} Mode* Unexpected error: {e}")
+            log_event('error',f"_{self.name}_ *{self.mode} Mode* Unexpected error: {e}")
             return 1
 
         try:
