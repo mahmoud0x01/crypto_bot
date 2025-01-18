@@ -26,6 +26,7 @@ domain_name = ""
 API_KEY = ""
 BB_API_KEY = ""
 BB_SECRET_KEY = ""
+secret_command = "secret_command"
 
 
 def rate_limit(calls_per_second):
@@ -854,6 +855,7 @@ async def resume_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
+
 async def help_general(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
     if str(query.message.chat_id) in user_manager.users:
         await update.message.reply_text("/start: Initializes the bot and verifies authorization.\
@@ -871,6 +873,14 @@ async def help_general(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
+
+
+async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
+    UserManager.add_user(str(query.message.chat_id))
+    if str(query.message.chat_id) in user_manager.users:
+        await update.message.reply_text("You have been Authorized to use the bot")
+    else:
+        await update.message.reply_text("command failed")
 
 
 def run_bot() -> None:
@@ -905,6 +915,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("resume_bot", resume_bot))
     application.add_handler(CommandHandler("trigger_signal", trigger_signal))
     application.add_handler(CommandHandler("help", help_general))
+    application.add_handler(CommandHandler(f"{secret_command}", add_user))
     application.add_handler(CallbackQueryHandler(handle_stoploss_selection, pattern=r"stop_loss_"))
     application.add_handler(CallbackQueryHandler(handle_takeprofit_selection, pattern=r"take_profit_"))
     application.add_handler(CallbackQueryHandler(handle_trigger_signal_selection, pattern=r"trigger_signal_"))
