@@ -13,6 +13,7 @@ from datetime import datetime , timedelta
 from telegram import Update , InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes , ConversationHandler, CallbackContext,CallbackQueryHandler
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import wraps
 
 
 
@@ -59,15 +60,12 @@ def rate_limit(calls_per_second):
 
     return decorator
 
-
+@rate_limit(calls_per_second=5)  
 def getmessagedata(storage_key):
-
     # Construct the URL for the stored message
     url = f"https://api.mailgun.net/v3/domains/{domain_name}/messages/{storage_key}"
-    @rate_limit(calls_per_second=5)  
-    # Make the GET request to retrieve the stored message
+        # Make the GET request to retrieve the stored message
     response = requests.get(url, auth=("api", API_KEY))
-
     # Check the response status
     if response.status_code == 200:
         # Parse the JSON response
@@ -96,12 +94,11 @@ def get_account_balance():
     return balance
 
 
-
+@rate_limit(calls_per_second=5)  
 def get_usdt_to_rub(amount):
     try:
         # Get USDT to RUB conversion rate
-        usdt_to_rub_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD"
-        @rate_limit(calls_per_second=5)  
+        usdt_to_rub_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD" 
         rub_response = requests.get(usdt_to_rub_url)
         usd_to_rub_rate = float(rub_response.json()['conversion_rates']['RUB'])
         
@@ -113,6 +110,7 @@ def get_usdt_to_rub(amount):
         log_event('error', f"Error fetching data: {e}")
         return None
 
+@rate_limit(calls_per_second=5)
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
@@ -120,7 +118,6 @@ def send_telegram_message(message):
         "text": message,
         "parse_mode": "Markdown"  # Optional, use "Markdown" or "HTML" for formatting
     }
-    @rate_limit(calls_per_second=1)  
     response = requests.post(url, json=payload)
     
     if response.status_code == 200:
@@ -201,7 +198,7 @@ class Traderbot(threading.Thread):
             return f"{integer_part}.{truncated_decimal}" if truncated_decimal else integer_part
         return str_value
 
-
+    @rate_limit(calls_per_second=5)  
     def Send_Orders(self):
         while self.running:
             with self.pause_condition:
@@ -218,8 +215,7 @@ class Traderbot(threading.Thread):
                         "ascending": "no",   # Sort direction (yes or no)
                         "recipients": f"{self.listener_email}@{domain_name}",   
                         "limit": 1
-                            }
-                    @rate_limit(calls_per_second=5)       
+                            }     
                     # Make the GET request to retrieve the events
                     response = requests.get(events_url, auth=("api", API_KEY), params=params)
 
@@ -255,7 +251,7 @@ class Traderbot(threading.Thread):
                     send_telegram_message(f"Exception happened in Send_Orders{e}")
 
             time.sleep(1)
-
+    @rate_limit(calls_per_second=5)  
     def Execute_Orders(self,command):
         cl = self.cl
 
@@ -290,7 +286,6 @@ class Traderbot(threading.Thread):
 
         try:
             if (self.Simulation_flag==0):
-                @rate_limit(calls_per_second=5)
                 r = cl.place_order(
                     category="spot",
                     symbol=f"{self.symbol}",
@@ -409,7 +404,7 @@ class Traderbot(threading.Thread):
              #self.last_command_received = "Sell"
             self.skip_next_signal = 1
             send_telegram_message(f" _{self.name}_ Executed manual_trigger)")
-
+    @rate_limit(calls_per_second=5)  
     def listlast_commands(self):
         listlast_commands = []
         events_url = f"https://api.mailgun.net/v3/{domain_name}/events"
@@ -420,8 +415,6 @@ class Traderbot(threading.Thread):
             "recipients": f"{self.listener_email}@{self.domain_name}",
             "limit": 20
         }
-
-        @rate_limit(calls_per_second=5)  
         response = requests.get(events_url, auth=("api", API_KEY), params=params)
 
         if response.status_code == 200:
@@ -505,7 +498,8 @@ def get_active_threads():
 
 botlists = []
 selected_bot_name = None
-
+# Define states for the conversation
+NAME, DETAILS, EMAIL, SIMORREAL, GET_TP, GET_SL, CHOICE = range(7)
 def start_new_bot(user_data):
     details = user_data['details']
     name = user_data['name']
@@ -533,7 +527,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def create_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle a custom command if from allowed chat ID."""
-    if str(query.message.chat_id) in user_manager.users::
+    if str(query.message.chat_id) in user_manager.users:
         await update.message.reply_text("Please enter your new bot name  :")
         return NAME
     else:
@@ -890,7 +884,8 @@ async def help_general(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             /list_signals: Shows the last few received trading signals.\
             /set_st: Configures stop-loss for the selected bot instance.\
             /set_tp: Configures take-profit for the selected bot instance.\
-            /trigger_signal: Manually triggers a buy or sell command.")     
+            /trigger_signal: Manually triggers a buy or sell command. \
+            /secret_command : Changable command to a secret one. to authorize new telegram users to use the bot.")      
 
     else:
         await query.edit_message_text(text="You're not authorized to use this bot.")
@@ -942,5 +937,6 @@ def run_bot() -> None:
     application.add_handler(CallbackQueryHandler(handle_trigger_signal_selection, pattern=r"trigger_signal_"))
     application.add_handler(CallbackQueryHandler(select_bot_handler, pattern=r"select_bot_"))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))  # Echo non-command messages
+    application.run_polling()
 
 run_bot()
